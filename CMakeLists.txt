@@ -11,7 +11,7 @@ set(TEST_EXEC_NAME "${PROJECT_NAME}Tests")
 # -----------------------------
 # CPM Setup
 # -----------------------------
-include(cmake/CPM.cmake) # <-- download CPM.cmake once into cmake/
+include(cmake/CPM.cmake)
 
 # -----------------------------
 # Dependencies via CPM
@@ -61,6 +61,7 @@ file(MAKE_DIRECTORY ${LOG_DIR})
 
 add_executable(${PROJECT_NAME}
     src/main.cpp
+    src/GaussSeidel.cpp
 )
 
 target_include_directories(${PROJECT_NAME}

@@ -5,7 +5,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "SparceMatrix.hpp"
+#include "SparseMatrix.hpp"
 
 namespace Graph {
 
