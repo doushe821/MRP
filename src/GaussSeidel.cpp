@@ -1,12 +1,23 @@
-#include "GaussSeidel.hpp"
+#include "Solvers.hpp"
+#include <cmath>
 
 namespace Solvers {
 
-std::vector<double> gaussSeidel(const SparseMatrix::SparseMatrixCSR &Matrix,
-                                const std::vector<double> &b, size_t MaxIters,
-                                double Tol) {
+
+// TODO make templated with spectral radius finder
+std::vector<double> GaussSeidelSOR(const SparseMatrix::SparseMatrixCSR &Matrix,
+                                   const std::vector<double> &B,
+                                   size_t MaxIters, double Tol,
+                                   double Omega = 1,
+                                   double Threshold = SIZE_MAX) {
   size_t Dim = Matrix.Dim;
   std::vector<double> Ans(Dim, 0.0);
+
+  // TODO implement other algos, do tests, compare.
+  double Rho = PowerIteration(Matrix);
+
+  // TODO might also compare with Omega = 1.6, without additional computations
+  Omega = 2 / (1 + std::sqrt(1 - Rho * Rho));
 
   for (size_t Iter = 0; Iter < MaxIters; ++Iter) {
 
@@ -23,17 +34,24 @@ std::vector<double> gaussSeidel(const SparseMatrix::SparseMatrixCSR &Matrix,
 
         if (j == i) {
           Diag = Val;
-        }
-        else {
+        } else {
           Sum += Val * Ans[j];
         }
       }
 
-      double NewXi = (b[i] - Sum) / Diag;
+      if (Diag == 0) {
+        std::cout << "Insufficient matrix: there is zero element on diagonal\n";
+      }
 
-      MaxDiff = std::max(MaxDiff, std::abs(NewXi - Ans[i]));
+      double NewXi = (B[i] - Sum) / Diag;
+      double Relaxed = (1.0 - Omega) * Ans[i] + Omega * NewXi;
 
-      Ans[i] = NewXi;
+      MaxDiff = std::max(MaxDiff, std::abs(Relaxed - Ans[i]));
+      Ans[i] = Relaxed;
+
+      if (Ans[i] >= Threshold) {
+        break;
+      }
     }
 
     if (MaxDiff < Tol) {
