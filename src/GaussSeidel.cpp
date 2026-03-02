@@ -5,7 +5,8 @@ namespace Solvers {
 
 
 // TODO make templated with spectral radius finder
-std::vector<double> GaussSeidelSOR(const SparseMatrix::SparseMatrixCSR &Matrix,
+template <typename SpectralRadiusFinderFn>
+std::vector<double> GaussSeidelSOR(const SparseMatrix::SparseMatrixCSR<double> &Matrix,
                                    const std::vector<double> &B,
                                    size_t MaxIters, double Tol,
                                    double Omega = 1,
@@ -13,8 +14,7 @@ std::vector<double> GaussSeidelSOR(const SparseMatrix::SparseMatrixCSR &Matrix,
   size_t Dim = Matrix.Dim;
   std::vector<double> Ans(Dim, 0.0);
 
-  // TODO implement other algos, do tests, compare.
-  double Rho = PowerIteration(Matrix);
+  double Rho = SpectralRadiusFinderFn(Matrix);
 
   // TODO might also compare with Omega = 1.6, without additional computations
   Omega = 2 / (1 + std::sqrt(1 - Rho * Rho));

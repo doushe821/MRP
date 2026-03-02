@@ -87,14 +87,15 @@ public:
   }
 };
 
-class Graph {
+template <typename NodeT>
+class AbsorbingMarkovChain {
 private:
-  std::vector<Node> Nodes;
+  std::vector<NodeT> Nodes;
   std::unordered_map<EdgeKey, double, EdgeKeyHash> Edges;
   NodeId Absorbing;
 
 public:
-  Graph(size_t N, NodeId Abs) : Nodes(N), Absorbing(Abs) {}
+  AbsorbingMarkovChain(size_t N, NodeId Abs) : Nodes(N), Absorbing(Abs) {}
 
   Node &node(NodeId id) { return Nodes[id]; }
 
@@ -107,10 +108,10 @@ public:
   double getEdgeWeight(NodeId from, NodeId to) const {
     return Edges.at({from, to});
   }
-
-  SparseMatrix::SparseMatrixCSR buildSystemMatrix() const {
+  // TODO replace with template parameter with interface for adding a_ij
+    SparseMatrix::SparseMatrixCSR<double> buildSystemMatrix() const {
     size_t GraphSize = Nodes.size();
-    SparseMatrix::SparseMatrixCSR SystemMatrix;
+    SparseMatrix::SparseMatrixCSR<double> SystemMatrix;
     SystemMatrix.Dim = GraphSize;
     SystemMatrix.RowPtr.resize(GraphSize + 1);
 

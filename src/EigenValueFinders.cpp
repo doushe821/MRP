@@ -1,9 +1,10 @@
 #include "Solvers.hpp"
 #include "SparseMatrix.hpp"
+#include <numeric>
 
 namespace Solvers {
-
-double PowerIteration(const SparseMatrix::SparseMatrixCSR &Matrix,
+// TODO implement other algos, do tests, compare.
+double PowerIteration(const SparseMatrix::SparseMatrixCSR<double> &Matrix,
                       size_t MaxIter) {
   std::vector<double> RandB;
   RandB.resize(Matrix.Dim);
@@ -24,6 +25,18 @@ double PowerIteration(const SparseMatrix::SparseMatrixCSR &Matrix,
   auto Norm = EuclidianVectorNorm(RandB);
   Rho /= Norm;
   return Rho;
+}
+
+double GershgorinUpperBoundMethod(const SparseMatrix::SparseMatrixCSR<double> &Matrix) {
+  double ApproxRho = 0.0;
+  for (size_t I = 0; I < Matrix.Dim; ++I) {
+    double RowSum = 0.0;
+    for (size_t J = Matrix.RowPtr[I]; J < Matrix.RowPtr[I + 1]; ++J) {
+      RowSum += Matrix.Values[J];
+    }
+    ApproxRho = std::max(RowSum, ApproxRho);
+  }
+  return ApproxRho;
 }
 
 } // namespace Solvers

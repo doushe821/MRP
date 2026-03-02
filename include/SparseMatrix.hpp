@@ -7,13 +7,28 @@
 
 namespace SparseMatrix {
 
+// sparse vector needed.
+template<typename ValT>
 struct SparseMatrixCSR {
+  // TODO think
+  SparseMatrixCSR<ValT>() = default;
+  SparseMatrixCSR<ValT>(std::vector<ValT> InitValues) {
+    Dim = InitValues.size();
+    RowPtr.resize(Dim + 1);
+    Values.assign(InitValues);
+    for (size_t I = 0; I < InitValues.size(); ++I) {
+      RowPtr[I] = Values.size();
+
+      ColIdx.push_back(I);
+    }
+  };
+
   std::vector<size_t> RowPtr;
   std::vector<size_t> ColIdx;
-  std::vector<double> Values;
+  std::vector<ValT> Values;
   size_t Dim = 0;
 
-  double get(size_t Row, size_t Col) {
+  double get(size_t Row, size_t Col) const {
     for (size_t k = RowPtr[Row]; k < RowPtr[Row + 1]; ++k) {
       if (ColIdx[k] == Col) {
         return Values[k];
@@ -22,12 +37,12 @@ struct SparseMatrixCSR {
     return 0.0;
   }
 
-  std::vector<double> operator*(const std::vector<double> Vec) const {
+  std::vector<ValT> operator*(const std::vector<ValT> Vec) const {
     if (Vec.size() != Dim) {
       throw(std::runtime_error(
           "SparseMatrix: Vector and matrix dimensions mismatch"));
     }
-    std::vector<double> Res;
+    std::vector<ValT> Res;
     Res.resize(Dim);
     for (size_t I = 0; I < Dim; ++I) {
       for (size_t K = RowPtr[I]; K < RowPtr[I+1]; ++K) {
@@ -39,8 +54,6 @@ struct SparseMatrixCSR {
 
 // TODO left side vector multiplication (maybe)
 // TODO transposition (conversion to CSC format) (maybe)
-
-
 };
 
 } // namespace SparseMatrix
