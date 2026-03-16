@@ -111,8 +111,7 @@ public:
   // TODO replace with template parameter with interface for adding a_ij
     SparseMatrix::SparseMatrixCSR<double> buildSystemMatrix() const {
     size_t GraphSize = Nodes.size();
-    SparseMatrix::SparseMatrixCSR<double> SystemMatrix;
-    SystemMatrix.Dim = GraphSize;
+    SparseMatrix::SparseMatrixCSR<double> SystemMatrix(GraphSize);
     SystemMatrix.RowPtr.resize(GraphSize + 1);
 
     for (NodeId i = 0; i < GraphSize; ++i) {

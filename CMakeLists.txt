@@ -82,6 +82,7 @@ file(MAKE_DIRECTORY ${LOG_DIR})
 add_executable(${PROJECT_NAME}
     src/main.cpp
     src/GaussSeidel.cpp
+    src/Helpers.cpp
 )
 
 target_include_directories(${PROJECT_NAME}

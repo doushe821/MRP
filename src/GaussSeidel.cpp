@@ -1,20 +1,21 @@
-#include "Solvers.hpp"
 #include <cmath>
+#include <iostream>
+
+#include "IMatrix.hpp"
+#include "Solvers.hpp"
 
 namespace Solvers {
 
-
-// TODO make templated with spectral radius finder
-template <typename SpectralRadiusFinderFn>
-std::vector<double> GaussSeidelSOR(const SparseMatrix::SparseMatrixCSR<double> &Matrix,
-                                   const std::vector<double> &B,
-                                   size_t MaxIters, double Tol,
-                                   double Omega = 1,
-                                   double Threshold = SIZE_MAX) {
-  size_t Dim = Matrix.Dim;
+// template further
+/*template <class MatrixT>
+std::vector<double>
+GaussSeidelSOR(const Interface::IMatrix<MatrixT, double> &Matrix,
+               const std::vector<double> &B, double Tol, double Omega,
+               double Threshold, size_t MaxIters) {
+  size_t Dim = Matrix.dim();
   std::vector<double> Ans(Dim, 0.0);
 
-  double Rho = SpectralRadiusFinderFn(Matrix);
+  double Rho = Solvers::PowerIteration(Matrix);
 
   // TODO might also compare with Omega = 1.6, without additional computations
   Omega = 2 / (1 + std::sqrt(1 - Rho * Rho));
@@ -23,33 +24,32 @@ std::vector<double> GaussSeidelSOR(const SparseMatrix::SparseMatrixCSR<double> &
 
     double MaxDiff = 0.0;
 
-    for (size_t i = 0; i < Dim; ++i) {
+    for (size_t I = 0; I < Dim; ++I) {
 
       double Diag = 0.0;
       double Sum = 0.0;
 
-      for (size_t k = Matrix.RowPtr[i]; k < Matrix.RowPtr[i + 1]; ++k) {
-        size_t j = Matrix.ColIdx[k];
-        double Val = Matrix.Values[k];
-
-        if (j == i) {
+      for (size_t J = 0; J < Dim; ++J) {
+        auto Val = Matrix.get(I, J);
+        if (I == J) {
           Diag = Val;
         } else {
-          Sum += Val * Ans[j];
+          Sum += Val * Ans[J];
         }
       }
 
       if (Diag == 0) {
-        std::cout << "Insufficient matrix: there is zero element on diagonal\n";
+        std::cout
+            << "Insufficient matrix: there is a zero element on diagonal\n";
       }
 
-      double NewXi = (B[i] - Sum) / Diag;
-      double Relaxed = (1.0 - Omega) * Ans[i] + Omega * NewXi;
+      double NewXi = (B[I] - Sum) / Diag;
+      double Relaxed = (1.0 - Omega) * Ans[I] + Omega * NewXi;
 
-      MaxDiff = std::max(MaxDiff, std::abs(Relaxed - Ans[i]));
-      Ans[i] = Relaxed;
+      MaxDiff = std::max(MaxDiff, std::abs(Relaxed - Ans[I]));
+      Ans[I] = Relaxed;
 
-      if (Ans[i] >= Threshold) {
+      if (Ans[I] >= Threshold) {
         break;
       }
     }
@@ -61,6 +61,6 @@ std::vector<double> GaussSeidelSOR(const SparseMatrix::SparseMatrixCSR<double> &
 
   std::cout << "Gauss-Seidel did not converge\n";
   return Ans;
-}
+}*/
 
 } // namespace Solvers
