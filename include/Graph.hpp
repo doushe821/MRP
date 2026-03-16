@@ -5,7 +5,7 @@
 #include <unordered_map>
 #include <vector>
 
-#include "SparseMatrix.hpp"
+#include "IMatrix.hpp"
 
 namespace Graph {
 
@@ -87,8 +87,7 @@ public:
   }
 };
 
-template <typename NodeT>
-class AbsorbingMarkovChain {
+template <typename NodeT, class MatrixT> class AbsorbingMarkovChain {
 private:
   std::vector<NodeT> Nodes;
   std::unordered_map<EdgeKey, double, EdgeKeyHash> Edges;
@@ -108,10 +107,11 @@ public:
   double getEdgeWeight(NodeId from, NodeId to) const {
     return Edges.at({from, to});
   }
-  // TODO replace with template parameter with interface for adding a_ij
-    SparseMatrix::SparseMatrixCSR<double> buildSystemMatrix() const {
+
+  // TODO rewrite using proper interface
+  MatrixT buildSystemMatrix() const {
     size_t GraphSize = Nodes.size();
-    SparseMatrix::SparseMatrixCSR<double> SystemMatrix(GraphSize);
+    MatrixT SystemMatrix(GraphSize);
     SystemMatrix.RowPtr.resize(GraphSize + 1);
 
     for (NodeId i = 0; i < GraphSize; ++i) {

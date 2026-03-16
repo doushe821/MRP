@@ -25,9 +25,9 @@ public:
     }
     RowPtr.resize(Dim + 1);
     RowPtr[0] = 0;
-    size_t PseudoRowIdx {0};
-    size_t PseudoColIdx {0};
-    size_t NonZero {0};
+    size_t PseudoRowIdx{0};
+    size_t PseudoColIdx{0};
+    size_t NonZero{0};
     for (auto &Val :
          InitValues) { // there was something similar in std::algorithm
       if (Val) {
@@ -36,7 +36,8 @@ public:
         ++NonZero;
       }
       if (PseudoRowIdx == (InitDim - 1)) {
-        std::cout << "End of row " << PseudoColIdx << ", nonzero = " << NonZero << '\n';
+        std::cout << "End of row " << PseudoColIdx << ", nonzero = " << NonZero
+                  << '\n';
         RowPtr[PseudoColIdx + 1] = NonZero;
         PseudoRowIdx = 0;
         ++PseudoColIdx;
@@ -46,12 +47,12 @@ public:
     }
   };
 
-  SparseMatrixCSR<ValT>(SparseMatrixCSR<ValT> &OtherMatrix)
+  SparseMatrixCSR<ValT>(const SparseMatrixCSR<ValT> &OtherMatrix)
       : Dim(OtherMatrix.dim()) {
     RowPtr.resize(Dim + 1);
-    Values.assign(OtherMatrix.getValues());
-    RowPtr.assign(OtherMatrix.getRowPtr());
-    RowPtr.assign(OtherMatrix.getColIdx());
+    Values = OtherMatrix.getValues();
+    RowPtr = OtherMatrix.getRowPtr();
+    RowPtr = OtherMatrix.getColIdx();
   };
 
   // Optimize
@@ -62,7 +63,9 @@ public:
   std::vector<size_t> getRowPtr() const { return RowPtr; }
 
   std::vector<size_t> getColIdx() const { return ColIdx; }
-  // Don't forget to move to private
+
+  // FIXME Don't forget to move to private after applying correct interfaces
+  // everywhere
   std::vector<size_t> RowPtr;
   std::vector<size_t> ColIdx;
   std::vector<ValT> Values;

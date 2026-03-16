@@ -54,58 +54,53 @@ template <class MatrixT> double GershgorinMethod(const MatrixT &Matrix) {
 // SOR.
 
 template <class MatrixT>
-std::vector<double>
-GaussSeidel(const Interface::IMatrix<MatrixT,double>& A,
-            const std::vector<double>& B,
-            double Tol,
-            size_t maxIter = 1000)
-{
-    const size_t n = A.dim();
+std::vector<double> GaussSeidel(const Interface::IMatrix<MatrixT, double> &A,
+                                const std::vector<double> &B, double Tol,
+                                size_t maxIter = 1000) {
+  const size_t n = A.dim();
 
-    std::vector<double> x(n, 0.0);
+  std::vector<double> x(n, 0.0);
 
-    // Precompute inverse diagonal
-    std::vector<double> invDiag(n);
+  // Precompute inverse diagonal
+  std::vector<double> invDiag(n);
 
-    for (size_t i = 0; i < n; ++i)
-    {
-        double d = A.get(i,i);
-        if (d == 0)
-            throw std::runtime_error("Zero diagonal in Gauss-Seidel");
+  for (size_t i = 0; i < n; ++i) {
+    std::cout << "i = " << i << std::endl;
+    double d = A.get(i, i);
+    if (d == 0)
+      throw std::runtime_error("Zero diagonal in Gauss-Seidel");
 
-        invDiag[i] = 1.0 / d;
+    invDiag[i] = 1.0 / d;
+  }
+
+  for (size_t iter = 0; iter < maxIter; ++iter) {
+    double maxDiff = 0.0;
+
+    for (size_t i = 0; i < n; ++i) {
+      double sigma = 0.0;
+
+      // j < i  (new values)
+      for (size_t j = 0; j < i; ++j)
+        sigma += A.get(i, j) * x[j];
+
+      // j > i  (old values)
+      for (size_t j = i + 1; j < n; ++j)
+        sigma += A.get(i, j) * x[j];
+
+      double newXi = (B[i] - sigma) * invDiag[i];
+
+      double diff = std::abs(newXi - x[i]);
+      if (diff > maxDiff)
+        maxDiff = diff;
+
+      x[i] = newXi;
     }
 
-    for (size_t iter = 0; iter < maxIter; ++iter)
-    {
-        double maxDiff = 0.0;
+    if (maxDiff < Tol)
+      return x;
+  }
 
-        for (size_t i = 0; i < n; ++i)
-        {
-            double sigma = 0.0;
-
-            // j < i  (new values)
-            for (size_t j = 0; j < i; ++j)
-                sigma += A.get(i,j) * x[j];
-
-            // j > i  (old values)
-            for (size_t j = i + 1; j < n; ++j)
-                sigma += A.get(i,j) * x[j];
-
-            double newXi = (B[i] - sigma) * invDiag[i];
-
-            double diff = std::abs(newXi - x[i]);
-            if (diff > maxDiff)
-                maxDiff = diff;
-
-            x[i] = newXi;
-        }
-
-        if (maxDiff < Tol)
-            return x;
-    }
-
-    std::cout << "Gauss-Seidel did not converge\n";
-    return x;
+  std::cout << "Gauss-Seidel did not converge\n";
+  return x;
 }
 } // namespace Solvers

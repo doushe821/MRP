@@ -108,13 +108,12 @@ target_link_libraries(${PROJECT_NAME}
     Eigen3::Eigen
 )
 
-
 # -----------------------------
 # Catch2 test executable
 # -----------------------------
 
 add_executable(${TEST_EXEC_NAME}
-    tests/AccuracyTests.cpp
+    tests/Bench.cpp
 
     src/EigenValueFinders.cpp
     src/GaussSeidel.cpp
