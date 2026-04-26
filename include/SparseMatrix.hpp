@@ -1,113 +1,156 @@
-#pragma once
-
-#include <exception>
-#include <iostream>
+#include <algorithm>
+#include <array>
+#include <cassert>
+#include <cmath>
+#include <cstdint>
+#include <limits>
 #include <stdexcept>
 #include <vector>
 
-namespace SparseMatrix {
-
-// sparse vector needed.
-// NOTE it's actually a NxN only matrix.
-template <typename ValT> class SparseMatrixCSR {
+template <typename Value> class SparseMarkovMatrix {
 private:
+  using Index = uint8_t;
+  static constexpr int MaxDim = UINT8_MAX;
+
+  static bool isZero(Value Val) { return Val == Value{0}; }
+
+  struct SparseRow {
+    std::vector<Index> Cols;
+    std::vector<Value> Values;
+
+    size_t size() const { return Cols.size(); }
+  };
+
   const size_t Dim = 0;
 
+  std::vector<SparseRow> Rows;
+
 public:
-  // TODO think
-  // thought.
-  ~SparseMatrixCSR() = default;
-  SparseMatrixCSR<ValT>(size_t InitDim) : Dim(InitDim){};
-  SparseMatrixCSR<ValT>(std::vector<ValT> InitValues, size_t InitDim)
-      : Dim(InitDim) {
-    if ((InitDim * InitDim) != InitValues.size()) {
-      throw(std::runtime_error("Invalid vector - dimension combination\n"));
+  explicit SparseMarkovMatrix(size_t InitDim) : Dim(InitDim), Rows(InitDim) {
+    assert(InitDim <= MaxDim);
+  }
+
+  size_t dim() { return Dim; }
+
+  Value get(Index RowIdx, Index ColIdx) const {
+    assert(RowIdx < ReducedDim);
+    assert(ColIdx < ReducedDim);
+
+    const SparseRow &Row = Rows[RowIdx];
+
+    for (unsigned I = 0; I < Row.size(); ++I) {
+      if (Row.cols[I] == ColIdx) {
+        return Row.values[I];
+      }
     }
-    RowPtr.resize(Dim + 1);
-    RowPtr[0] = 0;
-    size_t PseudoRowIdx{0};
-    size_t PseudoColIdx{0};
-    size_t NonZero{0};
-    for (auto &Val :
-         InitValues) { // there was something similar in std::algorithm
-      if (Val) {
-        Values.push_back(Val);
-        ColIdx.push_back(PseudoRowIdx);
-        ++NonZero;
+
+    return Value{0};
+  }
+
+  void set(Index RowIdx, Index ColIdx, Value Val) {
+    assert(RowIdx < Dim);
+    assert(ColIdx < Dim);
+
+    SparseRow &Row = Rows[RowIdx];
+
+    for (unsigned I = 0; I < Row.size(); ++I) {
+      if (Row.cols[I] == ColIdx) {
+        if (isZero(Val)) {
+          eraseElem(Row, I);
+        } else {
+          Row.Values[I] = Val;
+        }
+        break;
       }
-      if (PseudoRowIdx == (InitDim - 1)) {
-        std::cout << "End of row " << PseudoColIdx << ", nonzero = " << NonZero
-                  << '\n';
-        RowPtr[PseudoColIdx + 1] = NonZero;
-        PseudoRowIdx = 0;
-        ++PseudoColIdx;
-      } else {
-        ++PseudoRowIdx;
+    }
+
+    if (!isZero(Val)) {
+      Row.Cols.push_back(ColIdx);
+      Row.Values.push_back(Val);
+    }
+  }
+
+  void add(Index RowIdx, Index ColIdx, Value Delta) {
+    if (isZero(Delta)) {
+      return;
+    }
+
+    Value OldVal = get(RowIdx, ColIdx);
+    set(RowIdx, ColIdx, OldVal + Delta);
+  }
+
+  const std::vector<Index> &rowCols(Index RowIdx) const {
+    assert(RowIdx < Dim);
+    return Rows[RowIdx].Cols;
+  }
+
+  const std::vector<Value> &rowValues(Index RowIdx) const {
+    assert(RowIdx < Dim);
+    return Rows[RowIdx].Values;
+  }
+
+  size_t rowNNZ(Index RowIdx) const {
+    assert(RowIdx < Dim);
+    return Rows[RowIdx].size();
+  }
+
+  size_t nnz() const {
+    size_t Result = 0;
+    for (const auto &Row : Rows) {
+      Result += Row.size();
+    }
+    return Result;
+  }
+
+  class ActiveView {
+  private:
+    const SparseMarkovMatrix &MatrixRef;
+    std::vector<Index> ActiveIndices;
+    std::array<int, MaxDim> RealToActiveIndices{};
+    void reduceMatrix() {
+      RealToActiveIndices.fill(-1);
+
+      for (uint8_t ReducedRowIdx = 0; ReducedRowIdx < ActiveIndices.size();
+           ++ReducedRowIdx) {
+        Index RealRowIdx = ActiveIndices[ReducedRowIdx];
+
+        assert(RealRowIdx >= MatrixRef.dim());
+
+        assert(RealToActiveIndices[RealRowIdx] != -1);
+        
+        RealToActiveIndices[RealRowIdx] = ReducedRowIdx;
       }
+    }
+  public:
+    ActiveView(const SparseMarkovMatrix &Matrix, std::vector<Index> Active)
+        : MatrixRef(Matrix), ActiveIndices(std::move(Active)) {
+      reduceMatrix();
+    }
+
+    std::size_t dim() const { return ActiveIndices.size(); }
+
+    Index getOriginalIndex(size_t ReducedIdx) const {
+      return ActiveIndices.at(ReducedIdx);
+    }
+
+    int16_t getActiveIndex(Index RealIdx) const {
+      return RealToActiveIndices[RealIdx];
+    }
+
+    bool isActive(Index RealIdx) const {
+      return RealToActiveIndices[RealIdx] >= 0;
+    }
+
+    const std::vector<Index> &getActiveIndices() const { return ActiveIndices; }
+
+    Value get(size_t ActiveRowIdx, size_t ActiveColIdx) const {
+      Index RealRowIdx = ActiveIndices.at(ActiveRowIdx);
+      Index RealColIdx = ActiveIndices.at(ActiveColIdx);
+      return MatrixRef.get(RealRowIdx, RealColIdx);
     }
   };
 
-  SparseMatrixCSR<ValT>(const SparseMatrixCSR<ValT> &OtherMatrix)
-      : Dim(OtherMatrix.dim()) {
-    RowPtr.resize(Dim + 1);
-    Values = OtherMatrix.getValues();
-    RowPtr = OtherMatrix.getRowPtr();
-    RowPtr = OtherMatrix.getColIdx();
-  };
-
-  // Optimize
-  std::vector<ValT> getValues() const { return Values; }
-
-  std::vector<ValT> &getValues() { return Values; }
-
-  std::vector<size_t> getRowPtr() const { return RowPtr; }
-
-  std::vector<size_t> getColIdx() const { return ColIdx; }
-
-  // FIXME Don't forget to move to private after applying correct interfaces
-  // everywhere
-  std::vector<size_t> RowPtr;
-  std::vector<size_t> ColIdx;
-  std::vector<ValT> Values;
-
-  ValT get(size_t Row, size_t Col) const {
-    for (size_t K = RowPtr[Row]; K < RowPtr[Row + 1]; ++K) {
-      if (ColIdx[K] == Col) {
-        return Values[K];
-      }
-    }
-    ValT HopefullyZero{0};
-    return HopefullyZero;
+  ActiveView reduceFurther(const std::vector<Index> &Active) const {
+    return ActiveView(*this, Active);
   }
-
-  size_t dim() const { return Dim; }
-
-  std::vector<ValT> operator*(const std::vector<ValT> Vec) const {
-    if (Vec.size() != Dim) {
-      throw(std::runtime_error(
-          "SparseMatrix: Vector and matrix dimensions mismatch"));
-    }
-    std::vector<ValT> Res;
-    Res.resize(Dim);
-    for (size_t I = 0; I < Dim; ++I) {
-      for (size_t K = RowPtr[I]; K < RowPtr[I + 1]; ++K) {
-        Res[I] += Values[K] * Vec[K];
-      }
-    }
-    return Res;
-  }
-
-  // This is shit, learn cpp please
-  SparseMatrixCSR<ValT> operator*(const ValT Val) const {
-    SparseMatrixCSR<ValT> NewMatr{*this};
-    for (auto &NewVal : NewMatr.getValues()) {
-      NewVal *= Val;
-    }
-    return NewMatr;
-  }
-
-  // TODO left side vector multiplication (maybe)
-  // TODO transposition (conversion to CSC format) (maybe)
 };
-
-} // namespace SparseMatrix
